@@ -245,6 +245,8 @@ namespace WannaCriCS
             };
 
             downloader.DownloadProgressChanged += OnDownloadProgressChanged;
+
+            InitFFmpeg();
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -749,7 +751,7 @@ namespace WannaCriCS
         {
             CurrentAudioState = ProgramAudioState.DownloadingAudio;
             UIState.Text = "DownloadingAudio";
-            var aurl = audioStreamInfo.Url + "&range=" + "0-999999999999";
+            var aurl = audioStreamInfo.Url;
             var asave = OutputPath + "\\" + VideoSafeTitle + "audio." + "webm";
             //Debugger.Break();
             Debug.WriteLine(aurl);
@@ -760,7 +762,7 @@ namespace WannaCriCS
             CurrentVideoState = ProgramVideoState.DownloadingVideo;
             AudioFFmpegProcess(asave);
             UIState2.Text = "DownloadingVideo";
-            var vurl = videoStreamInfo.Url + "&range=" + "0-999999999999";
+            var vurl = videoStreamInfo.Url;
             var vsave = OutputPath + "\\" + VideoSafeTitle + "." + "webm";
             //Debugger.Break();
             Debug.WriteLine(vurl);
@@ -884,7 +886,7 @@ namespace WannaCriCS
                 .WithAudioCodec(AudioCodec.LibVorbis)
                 .WithAudioSamplingRate(44100)
                 .WithAudioBitrate(320)
-                .WithCustomArgument("-vn")
+                .WithCustomArgument("-vn" + ((Volume=="1")?"":" -af volume="+Volume))
                 )
                 .NotifyOnProgress(progressHandler, VideoDuration)
             .ProcessAsynchronously();
@@ -899,6 +901,7 @@ namespace WannaCriCS
             });
             Thread.Sleep(1000);//WaitFFMpegWrite
             Process process = new Process();
+            process.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\FFmpeg";
             process.StartInfo.FileName = Environment.CurrentDirectory + "\\Python\\python.exe";
             process.StartInfo.Arguments = " -m wannacri createusm \"" + OutputPath + "\\" + SafeOutputName + Suffix + "\" --output \"" + OutputPath + "\\" + SafeOutputName + "\"";
             process.StartInfo.UseShellExecute = false;
