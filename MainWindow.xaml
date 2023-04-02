@@ -20,18 +20,24 @@
         UseAeroCaptionButtons="False" />
     </WindowChrome.WindowChrome>
     <Grid Margin="0,0,0,0">
-        <StackPanel Margin="16,16,16,16" Orientation="Vertical" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="649*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel Margin="16,16,15,16" Orientation="Vertical">
 
             <Grid Margin="0,0,0,0">
                 <Grid x:Name="OnlineInput" Margin="0,0,0,0">
                     <TextBlock Text="Youtube Link" Width="95" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White"/>
                     <TextBox x:Name="UrlText" Margin="100,0,68,0" VerticalAlignment="Center"></TextBox>
-                    <Button x:Name="UrlSelect" Content="Check" Click="OnCheckClicked" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
+                    <ui:Button x:Name="UrlClear" Margin="0,0,75,0" HorizontalAlignment="Right" Icon="Dismiss24" Click="OnUrlClearClicked"/>
+                    <Button x:Name="UrlSelect" Content="Check" Click="OnCheckClicked" Height="30" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
                 </Grid>
                 <Grid x:Name="LocalInput" Margin="1000,0,0,0" Opacity="0">
                     <TextBlock Text="Input" Width="55" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White"/>
                     <TextBox x:Name="InputText" IsEnabled="False" Margin="60,0,68,0" VerticalAlignment="Center"></TextBox>
-                    <Button x:Name="InputSelect" Content="Select" Click="OnInputSelectClicked" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
+                    <Button x:Name="InputSelect" Content="Select" Click="OnInputSelectClicked" Height="30" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
+                    <Button x:Name="InputUSMSelect" Content="Select" Click="OnInputUSMSelectClicked" Height="0" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
                 </Grid>
                 <Grid x:Name="Info" Margin="30,60,0,0">
                     <TextBlock x:Name="info" Foreground="White" Margin="64,0,0,0" Text="Waiting..."></TextBlock>
@@ -39,15 +45,22 @@
                 <TextBlock x:Name="info2" Foreground="White" Margin="94,80,-30,-20" Text=""></TextBlock>
             </Grid>
             <Grid Margin="0,10,0,0">
-                <StackPanel Orientation="Vertical">
-                    <RadioButton x:Name="OnlineRadio" Click="OnOnlineRadioClicked" IsChecked="True" IsEnabled="False">
-                        <TextBlock Margin="0,-2,0,0" Text="Online" Width="55" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
+                <StackPanel Orientation="Horizontal" >
+                    <RadioButton x:Name="OnlineRadio" Width="Auto" Click="OnOnlineRadioClicked" IsChecked="True" IsEnabled="False">
+                            <TextBlock Margin="0,-2,0,0" Text="VideoLink" Width="90" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
+                        </RadioButton>
+                    <!--<RadioButton x:Name="OnlineListRadio" Width="Auto" Click="OnOnlineListRadioClicked" >
+                        <TextBlock Margin="0,-2,0,0" Text="PlayListLink" Width="90" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
+                    </RadioButton>-->
+                    <RadioButton x:Name="LocalRadio" Width="Auto" Click="OnLocalRadioClicked">
+                        <TextBlock Margin="0,-2,0,0" Text="Local" Width="90" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
                     </RadioButton>
-                    <RadioButton x:Name="LocalRadio" Click="OnLocalRadioClicked">
-                        <TextBlock Margin="0,-2,0,0" Text="Local" Width="55" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
+                    <RadioButton x:Name="LocalUSMRadio" Width="Auto" Click="OnLocalUSMRadioClicked">
+                        <TextBlock Margin="0,-2,0,0" Text="ExtractUSM" Width="90" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" HorizontalAlignment="Left"/>
                     </RadioButton>
                 </StackPanel>
                 <TextBlock x:Name="RecommendHint" Opacity="0" Margin="0,8,0,0" Text="Recommended for 1080P60 VP9" Width="235" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Top" Foreground="White" HorizontalAlignment="Right"></TextBlock>
+                <TextBlock x:Name="LinuxHint" Opacity="0" Margin="0,34,0,0" Text="Linux is not compatible with H264" Width="250" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Top" Foreground="White" HorizontalAlignment="Right"></TextBlock>
             </Grid>
             <Grid x:Name="ListGrid" Height="0">
                 <ListView Padding="0" Margin="0,0,0,0" x:Name="UIVideoList" 
@@ -67,9 +80,9 @@
                 <TextBox x:Name="OutputText" IsEnabled="False" Margin="60,0,68,0" VerticalAlignment="Center"></TextBox>
                 <Button x:Name="OutputSelect" Content="Select" Click="OnOutputSelectClicked" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
             </Grid>
-            <Grid x:Name="Codec" Margin="0,30,0,0" Height="0">
+            <Grid x:Name="Codec" Margin="0,30,0,0" Width="380" HorizontalAlignment="Left">
                 <TextBlock FontSize="16" Width="55" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="White">Codec</TextBlock>
-                <StackPanel Margin="60,0,0,0" HorizontalAlignment="Left">
+                <StackPanel Margin="60,0,0,0" Orientation="Horizontal" HorizontalAlignment="Left">
                     <RadioButton Width="Auto" x:Name="VP9Radio" IsChecked="True">
                         <TextBlock x:Name="VP9Text" Margin="0,-2,0,0" FontSize="16" Width="200" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center"><Run Text="VP9"/></TextBlock>
                     </RadioButton>
@@ -78,7 +91,7 @@
                     </RadioButton>
                 </StackPanel>
             </Grid>
-            <Grid x:Name="Modify" Margin="0,10,0,0">
+            <Grid x:Name="Modify" Margin="0,10,0,0" Width="380" HorizontalAlignment="Left">
                 <StackPanel>
                     <Grid Margin="0,0,0,0" Width="290" HorizontalAlignment="Left">
                         <TextBlock Text="CRF:" Width="55" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
@@ -104,24 +117,56 @@
                 <TextBlock x:Name="UIProgressText" Foreground="White" FontSize="16" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Progress"></TextBlock>
             </Grid>
         </StackPanel>
-        <StackPanel Orientation="Vertical" VerticalAlignment="Bottom">
+        <StackPanel Orientation="Vertical" VerticalAlignment="Bottom" Grid.ColumnSpan="2" Margin="0,0,0,0">
             <Grid Margin="16,0,16,16" VerticalAlignment="Bottom">
-                <ui:Button x:Name="ConvertButton" Appearance="Primary" Click="OnConvertClicked">Convert</ui:Button>
+                <ui:Button x:Name="ConvertButton" Appearance="Primary" Click="CompatibilityCheck">Convert</ui:Button>
                 <Button x:Name="ExitButton" Content="Exit" Margin="78,0,0,0" Click="OnExitClicked" HorizontalAlignment="Right"></Button>
             </Grid>
         </StackPanel>
         <ui:Dialog x:Name="ExitDialog"
                    Height="Auto"
                    Title="Still converting!"
-                   Content="Do you really want to exit?"
-                   FontSize="18"
+                   FontSize="20"
                    Foreground="White"
                    ButtonLeftAppearance="Primary"
                    ButtonLeftName="Exit"
                    ButtonLeftClick="Exit"
                    ButtonRightName="Cancel"
-                   ButtonRightClick="OnCancelClicked"
-                   ></ui:Dialog>
-        <ui:Snackbar x:Name="ErrorBar" Foreground="White" Timeout="-1" Content=""></ui:Snackbar>
+                   ButtonRightClick="OnCancelClicked" Grid.ColumnSpan="2"
+                   DialogHeight="200"
+                   DialogWidth="300"
+                   >
+            <ui:Dialog.Content>
+                <StackPanel>
+                    <TextBlock></TextBlock>
+                    <TextBlock Margin="0,-10,0,0" FontSize="14" Text="Do you really want to exit?"></TextBlock>
+                </StackPanel>
+            </ui:Dialog.Content>
+        </ui:Dialog>
+        <ui:Dialog x:Name="ConfirmationDialog"
+                   Height="Auto"
+                   FontSize="20"
+                   Foreground="White"
+                   ButtonLeftAppearance="Primary"
+                   ButtonLeftName="Use H264"
+                   ButtonLeftClick="OnConvertClicked"
+                   ButtonRightName="Cancel"
+                   ButtonRightClick="OnCancelClicked" Grid.ColumnSpan="2"
+                   DialogHeight="250"
+                   DialogWidth="400"
+                   >
+            <ui:Dialog.Title>
+                Do you want to convert with H264?
+            </ui:Dialog.Title>
+            <ui:Dialog.Content>
+                <StackPanel>
+                    <TextBlock></TextBlock>
+                    <TextBlock FontSize="16" Text="H264 offers faster conversion"></TextBlock>
+                    <TextBlock FontSize="16" Text="but can make your mod incompatible with Linux."></TextBlock>
+                    <TextBlock FontSize="16" Text="Please select VP9 for better compatibility."></TextBlock>
+                </StackPanel>
+            </ui:Dialog.Content>
+        </ui:Dialog>
+        <ui:Snackbar x:Name="ErrorBar" Foreground="White" Timeout="-1" Content="" Grid.ColumnSpan="2"></ui:Snackbar>
     </Grid>
 </Window>

@@ -22,6 +22,8 @@ using Downloader;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Net.Http;
+using System.Windows.Threading;
+using Microsoft.Win32;
 
 namespace WannaCriCS
 {
@@ -89,27 +91,33 @@ namespace WannaCriCS
 
         public string OutputFileName;
 
-        public string MediaInfo;
-
-        public string VideoTitle;
-
-        public string VideoSafeTitle;
-
         public StreamManifest streamManifest;
 
         public IVideoStreamInfo videoStreamInfo;
 
         public IStreamInfo audioStreamInfo;
 
-        public string CurrentVideoCodec;
+        public class MediaInfo
+        {
+            public string VideoCodec;
+            public string VideoCodecThreeShort => VideoCodec.Substring(0, 3);
 
-        public string CurrentVideoCodecThreeShort;
+            public string AudioCodec;
 
-        public string CurrentAudioCodec;
+            public string _MediaInfo;
 
-        public TimeSpan VideoDuration;
+            public string VideoTitle;
+            public string VideoSafeTitle => System.Text.Encodings.Web.UrlEncoder.Default.Encode(VideoTitle);
 
-        public CodecType _VideoCodec;
+            public TimeSpan VideoDuration;
+
+            public CodecType _VideoCodec;
+
+            public bool IsAudioAvailable;
+
+        }
+
+        public MediaInfo CurrentMedia;
 
         public string CRF;
 
@@ -129,14 +137,7 @@ namespace WannaCriCS
         //AudioDownloadProgress 10% VideoDownloadProgress 35% AudioProgress 5% VideoProgress 45% Python 3% Rename 2%
         //AudioProgress 10% VideoProgress 80% Python 6% Rename 4%
 
-        public bool IsAudioAvailable;
-
         public bool ProcessLock;
-
-        public object SelectedItem
-        {
-            get; set;
-        }
 
         public static readonly DownloadConfiguration downloadOpt = new DownloadConfiguration()
         {
@@ -182,7 +183,46 @@ namespace WannaCriCS
         {
             InitializeComponent();
 
-            SlideOut.To = new Thickness(1000, 0, 0, 0); ;
+            InitAnimation();
+
+            downloader.DownloadProgressChanged += OnDownloadProgressChanged;
+
+            InitFFmpeg();
+
+            CurrentMedia = new MediaInfo();
+    }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            e.Cancel = true;
+            OnExitClicked(null, null);
+        }
+
+        public void Exit(object sender, EventArgs e)
+        {
+            var i = Process.GetProcessesByName("ffmpeg").Length - 1;
+            while (i >= 0)
+            {
+                try
+                {
+                    Process.GetProcessesByName("ffmpeg")[i].Kill();
+                }
+                catch (Exception)
+                {
+                    if (i > 0)
+                    {
+                        i--;
+                    }
+                    else { Process.GetCurrentProcess().Kill(); }
+                }
+            }
+            Process.GetCurrentProcess().Kill();
+
+        }
+
+        public void InitAnimation()
+        {
+            SlideOut.To = new Thickness(1000, 10, 0, 0); ;
             SlideOut.Duration = TimeSpan.FromSeconds(1);
             SlideOut.EasingFunction = new BackEase()
             {
@@ -190,7 +230,7 @@ namespace WannaCriCS
                 Amplitude = 1,
             };
 
-            SlideIn.To = new Thickness(0, 0, 0, 0);
+            SlideIn.To = new Thickness(0, 10, 0, 0);
             SlideIn.Duration = TimeSpan.FromSeconds(1);
             SlideIn.EasingFunction = new BackEase()
             {
@@ -228,53 +268,21 @@ namespace WannaCriCS
                 Amplitude = 1
             };
 
-            CodecListOut.To = 65;
+            CodecListOut.To = 380;
             CodecListOut.Duration = TimeSpan.FromSeconds(0.5);
-            CodecListOut.EasingFunction = new BackEase()
-            {
-                EasingMode = EasingMode.EaseOut,
-                Amplitude = 1
-            };
+            //CodecListOut.EasingFunction = new BackEase()
+            //{
+            //    EasingMode = EasingMode.EaseOut,
+            //    Amplitude = 1
+            //};
 
             CodecListIn.To = 0;
             CodecListIn.Duration = TimeSpan.FromSeconds(0.5);
-            CodecListIn.EasingFunction = new BackEase()
-            {
-                EasingMode = EasingMode.EaseIn,
-                Amplitude = 1
-            };
-
-            downloader.DownloadProgressChanged += OnDownloadProgressChanged;
-
-            InitFFmpeg();
-        }
-
-        protected override void OnClosing(CancelEventArgs e)
-        {
-            e.Cancel = true;
-            OnExitClicked(null, null);
-        }
-
-        public void Exit(object sender, EventArgs e)
-        {
-            var i = Process.GetProcessesByName("ffmpeg").Length - 1;
-            while (i >= 0)
-            {
-                try
-                {
-                    Process.GetProcessesByName("ffmpeg")[i].Kill();
-                }
-                catch (Exception)
-                {
-                    if (i > 0)
-                    {
-                        i--;
-                    }
-                    else { Process.GetCurrentProcess().Kill(); }
-                }
-            }
-            Process.GetCurrentProcess().Kill();
-
+            //CodecListIn.EasingFunction = new BackEase()
+            //{
+            //    EasingMode = EasingMode.EaseIn,
+            //    Amplitude = 1
+            //};
         }
 
         public void InitFFmpeg()
@@ -292,6 +300,7 @@ namespace WannaCriCS
                     OpenListButton.BeginAnimation(OpacityProperty, FadeOut);
                     OpenListButton.BeginAnimation(MarginProperty, SlideOut);
                     RecommendHint.BeginAnimation(OpacityProperty, FadeOut);
+                    LinuxHint.BeginAnimation(OpacityProperty, FadeOut);
                     UIVideoList.IsEnabled = false;
                     break;
                 case AnimationType.On:
@@ -302,6 +311,7 @@ namespace WannaCriCS
                     OpenListButton.BeginAnimation(OpacityProperty, FadeOut);
                     OpenListButton.BeginAnimation(MarginProperty, SlideOut);
                     RecommendHint.BeginAnimation(OpacityProperty, FadeIn);
+                    LinuxHint.BeginAnimation(OpacityProperty, FadeIn);
                     UIVideoList.IsEnabled = true;
                     break;
                 case AnimationType.Half:
@@ -312,6 +322,7 @@ namespace WannaCriCS
                     OpenListButton.BeginAnimation(OpacityProperty, FadeIn);
                     OpenListButton.BeginAnimation(MarginProperty, SlideIn);
                     RecommendHint.BeginAnimation(OpacityProperty, FadeOut);
+                    LinuxHint.BeginAnimation(OpacityProperty, FadeOut);
                     UIVideoList.IsEnabled = false;
                     break;
             }
@@ -322,31 +333,36 @@ namespace WannaCriCS
             if (isLocked)
             {
                 InputSelect.IsEnabled = false; OutputSelect.IsEnabled = false;
-                UrlText.IsEnabled = false; UrlSelect.IsEnabled = false;
+                UrlText.IsEnabled = false; UrlSelect.IsEnabled = false; UrlClear.IsEnabled = false;
                 LocalRadio.IsEnabled = false; OnlineRadio.IsEnabled = false;
                 VP9Radio.IsEnabled = false; H264Radio.IsEnabled = false;
                 CRFBox.IsEnabled = false; VolumeBox.IsEnabled = false; BrightnessBox.IsEnabled = false;
-                UrlText.IsEnabled = false;
                 ConvertButton.IsEnabled = false;
                 ListAnimation(AnimationType.Off);
                 ProcessLock = true;
-                
+
             }
             else
             {
                 InputSelect.IsEnabled = true; OutputSelect.IsEnabled = true;
-                UrlText.IsEnabled = false; UrlSelect.IsEnabled = false;
+                UrlText.IsEnabled = true; UrlSelect.IsEnabled = true; UrlClear.IsEnabled = true;
                 VP9Radio.IsEnabled = true; H264Radio.IsEnabled = true;
                 CRFBox.IsEnabled = true; VolumeBox.IsEnabled = true; BrightnessBox.IsEnabled = true;
-                UrlText.IsEnabled = true;
                 ConvertButton.IsEnabled = true;
                 ProcessLock = false;
                 if (OnlineRadio.IsChecked == true)
                 {
                     LocalRadio.IsEnabled = true;
+                    LocalUSMRadio.IsEnabled = true;
                 }
-                else
+                else if (LocalRadio.IsChecked == true)
                 {
+                    OnlineRadio.IsEnabled = true;
+                    LocalUSMRadio.IsEnabled = true;
+                }
+                else if (LocalUSMRadio.IsChecked == true)
+                {
+                    LocalRadio.IsEnabled = true;
                     OnlineRadio.IsEnabled = true;
                 }
             }
@@ -404,13 +420,12 @@ namespace WannaCriCS
             try
             {
                 var video = await Youtube.Videos.GetAsync(VideoUrl);
-                VideoTitle = video.Title;
-                VideoSafeTitle = System.Text.Encodings.Web.UrlEncoder.Default.Encode(VideoTitle);
+                CurrentMedia.VideoTitle = video.Title;
                 var maxLength = 23;
-                var ShortVideoTitle = VideoTitle.Length > maxLength ? VideoTitle.Substring(0, maxLength - 13) + "...(Hover to see more)" : VideoTitle;
-                VideoDuration = (TimeSpan)video.Duration;
-                info.Text = "Title:" + ShortVideoTitle + " Duration:" + VideoDuration.ToString("hh\\:mm\\:ss");
-                info.ToolTip = VideoTitle;
+                var ShortVideoTitle = CurrentMedia.VideoTitle.Length > maxLength ? CurrentMedia.VideoTitle.Substring(0, maxLength - 13) + "...(Hover to see more)" : CurrentMedia.VideoTitle;
+                CurrentMedia.VideoDuration = (TimeSpan)video.Duration;
+                info.Text = "Title:" + ShortVideoTitle + " Duration:" + CurrentMedia.VideoDuration.ToString("hh\\:mm\\:ss");
+                info.ToolTip = CurrentMedia.VideoTitle;
                 info2.Text = "Getting Stream Info...";
                 streamManifest = await Youtube.Videos.Streams.GetManifestAsync(VideoUrl);
                 var VideoList = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec.Substring(0, 3) == "vp9" || s.VideoCodec.Substring(0, 3) == "avc").Where(s => s.VideoResolution.Height >= 480).ToList();
@@ -425,8 +440,7 @@ namespace WannaCriCS
             {
                 SnackBarManager(SnackBarType.LinkError);
                 info.Text = "NotAvailable";
-                CurrentVideoCodec = "";
-                RecommendCodec();
+                CurrentMedia.VideoCodec = string.Empty;
             }
         }
 
@@ -440,21 +454,20 @@ namespace WannaCriCS
                 videoStreamInfo = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec == c).Where(s => s.VideoQuality.Label == q).GetWithHighestVideoQuality();
                 var VideoResolution = videoStreamInfo.VideoResolution.Width.ToString() + "x" + videoStreamInfo.VideoResolution.Height.ToString();
                 var VideoFrameRate = videoStreamInfo.VideoQuality.Framerate.ToString();
-                CurrentVideoCodec = videoStreamInfo.VideoCodec;
-                CurrentVideoCodecThreeShort = CurrentVideoCodec.Substring(0, 3);
+                CurrentMedia.VideoCodec = videoStreamInfo.VideoCodec;
                 RecommendCodec();
-                info2.Text = "Video:" + VideoResolution + " " + CurrentVideoCodec + " Audio:Getting...";
+                info2.Text = "Video:" + VideoResolution + " " + CurrentMedia.VideoCodec + " Audio:Getting...";
                 ListAnimation(AnimationType.Half);
                 try
                 {
                     audioStreamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-                    CurrentAudioCodec = audioStreamInfo.Bitrate.KiloBitsPerSecond.ToString("0");
-                    info2.Text = "Video:" + VideoResolution + " " + VideoFrameRate + "fps " + CurrentVideoCodec + " Audio:" + CurrentAudioCodec + "Kbit/s";
-                    IsAudioAvailable = true;
+                    CurrentMedia.AudioCodec = audioStreamInfo.Bitrate.KiloBitsPerSecond.ToString("0");
+                    info2.Text = "Video:" + VideoResolution + " " + VideoFrameRate + "fps " + CurrentMedia.VideoCodec + " Audio:" + CurrentMedia.AudioCodec + "Kbit/s";
+                    CurrentMedia.IsAudioAvailable = true;
                 }
                 catch (Exception)
                 {
-                    IsAudioAvailable = false;
+                    CurrentMedia.IsAudioAvailable = false;
                 }
             }
             catch (Exception)
@@ -470,58 +483,33 @@ namespace WannaCriCS
             try
             {
                 var mediaInfo = await FFProbe.AnalyseAsync(InputName);
-                CurrentVideoCodec = mediaInfo.PrimaryVideoStream.CodecName;
-                CurrentVideoCodecThreeShort = CurrentVideoCodec.Substring(0, 3);
-                VideoDuration = mediaInfo.PrimaryVideoStream.Duration;
+                CurrentMedia.VideoCodec = mediaInfo.PrimaryVideoStream.CodecName;
+                CurrentMedia.VideoDuration = mediaInfo.PrimaryVideoStream.Duration;
                 InputText.Text = InputName;
                 try
                 {
                     if (mediaInfo.PrimaryAudioStream.CodecName != null)
                     {
-                        CurrentAudioCodec = mediaInfo.PrimaryAudioStream.CodecName;
+                        CurrentMedia.AudioCodec = mediaInfo.PrimaryAudioStream.CodecName;
                     }
-                    if (CurrentAudioCodec != null && CurrentAudioCodec != "" && CurrentAudioCodec != "NotAvailable")
+                    if (CurrentMedia.AudioCodec != null && CurrentMedia.AudioCodec != "" && CurrentMedia.AudioCodec != "NotAvailable")
                     {
-                        IsAudioAvailable = true;
+                        CurrentMedia.IsAudioAvailable = true;
                     }
                 }
                 catch (Exception)
                 {
-                    CurrentAudioCodec = "NotAvailable";
-                    IsAudioAvailable = false;
+                    CurrentMedia.AudioCodec = "NotAvailable";
+                    CurrentMedia.IsAudioAvailable = false;
                 }
                 RecommendCodec();
-                info.Text = "Video:" + CurrentVideoCodec + " Audio:" + CurrentAudioCodec + " Duration:" + VideoDuration.ToString("hh\\:mm\\:ss");
+                info.Text = "Video:" + CurrentMedia.VideoCodec + " Audio:" + CurrentMedia.AudioCodec + " Duration:" + CurrentMedia.VideoDuration.ToString("hh\\:mm\\:ss");
             }
             catch (Exception)
             {
                 InputName = InputText.Text;
                 SnackBarManager(SnackBarType.NotValid);
-            }
-        }
-
-        public void RecommendCodec()
-        {
-            if (CurrentVideoCodecThreeShort == "vp9")
-            {
-                VP9Text.Text = "VP9 (Recommended)";
-                H264Text.Text = "H.264";
-                VP9Radio.IsChecked = true;
-                H264Radio.IsChecked = false;
-            }
-            else if (CurrentVideoCodecThreeShort == "h26" || CurrentVideoCodecThreeShort == "avc")
-            {
-                VP9Text.Text = "VP9";
-                H264Text.Text = "H.264 (Recommended)";
-                VP9Radio.IsChecked = false;
-                H264Radio.IsChecked = true;
-            }
-            else
-            {
-                VP9Text.Text = "VP9";
-                H264Text.Text = "H.264";
-                VP9Radio.IsChecked = true;
-                H264Radio.IsChecked = false;
+                RecommendCodec();
             }
         }
 
@@ -541,10 +529,36 @@ namespace WannaCriCS
             }
         }
 
+        public string SelectUSMInputFile()
+        {
+            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            openFileDialog.FileName = "Output";
+            openFileDialog.DefaultExt = ".usm";
+            openFileDialog.Filter = "Criware Video File (.usm)|*.usm";
+            openFileDialog.AddExtension = true;
+            openFileDialog.CheckFileExists = true;
+            openFileDialog.CheckPathExists = true;
+            var result = openFileDialog.ShowDialog();
+
+            if (result == true)
+            {
+                return openFileDialog.FileName;
+            }
+            else
+            {
+                return InputName;
+            }
+        }
+
         public string SelectOutputFile()
         {
-            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog { Filter = "*.usm|*.usm" };
-
+            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
+            saveFileDialog.FileName = "Output";
+            saveFileDialog.DefaultExt = ".usm";
+            saveFileDialog.Filter = "Criware Video File (.usm)|*.usm";
+            saveFileDialog.AddExtension = true;
+            saveFileDialog.CheckFileExists = false;
+            saveFileDialog.CheckPathExists = true;
             var result = saveFileDialog.ShowDialog();
 
             if (result == true)
@@ -559,28 +573,41 @@ namespace WannaCriCS
 
         public void ClearInfo()
         {
-            ListAnimation(AnimationType.Off);
-            VideoTitle = null;
-            VideoSafeTitle = null;
-            streamManifest = null;
-            videoStreamInfo = null;
-            audioStreamInfo = null;
-            MediaInfo = null;
-            CurrentVideoCodec = null;
-            CurrentVideoCodecThreeShort = null;
-            CurrentAudioCodec = null;
-            IsAudioAvailable = false;
-            VideoDownloadProgress = 0;
-            AudioDownloadProgress = 0;
-            VideoProgress = 0;
-            AudioProgress = 0;
-            info.Text = "Waiting...";
-            info2.Text = string.Empty;
-            UIState.Text = string.Empty;
-            UIState2.Text = string.Empty;
-            UIVideoList.Items.Clear();
+            try
+            {
+                ListAnimation(AnimationType.Off);
+                info.Text = "Waiting...";
+                info2.Text = string.Empty;
+                UIState.Text = string.Empty;
+                UIState2.Text = string.Empty;
+                VideoDownloadProgress = 0;
+                AudioDownloadProgress = 0;
+                VideoProgress = 0;
+                AudioProgress = 0;
+                UIVideoList.Items.Clear();
+                CurrentMedia.VideoTitle = string.Empty;
+                streamManifest = null;
+                videoStreamInfo = null;
+                audioStreamInfo = null;
+                CurrentMedia._MediaInfo = string.Empty;
+                CurrentMedia.VideoCodec = string.Empty;
+                CurrentMedia.AudioCodec = string.Empty;
+                CurrentMedia.IsAudioAvailable = false;
+                RecommendCodec();
+            }
+            catch (Exception)
+            {
+                SnackBarManager(SnackBarType.ConvertError);
+            }
+            
         }
 
+        public void OnUrlClearClicked(object sender, EventArgs e)
+        {
+            ClearInfo();
+            RecommendCodec();
+            UrlText.Text = string.Empty;
+        }
         public void OnExitClicked(object sender, EventArgs e)
         {
             if (ProcessLock)
@@ -600,6 +627,7 @@ namespace WannaCriCS
         public void OnCancelClicked(object sender, EventArgs e)
         {
             ExitDialog.Hide();
+            ConfirmationDialog.Hide();
         }
 
         public void OnOnlineRadioClicked(object sender, RoutedEventArgs e)
@@ -608,14 +636,35 @@ namespace WannaCriCS
             OnlineInput.BeginAnimation(OpacityProperty, FadeIn);
             LocalInput.BeginAnimation(MarginProperty, SlideOut);
             LocalInput.BeginAnimation(OpacityProperty, FadeOut);
-            Codec.BeginAnimation(HeightProperty, CodecListIn);
+            Codec.BeginAnimation(WidthProperty, CodecListOut);
+            Modify.BeginAnimation(WidthProperty, CodecListOut);
+            //Codec.BeginAnimation(HeightProperty, CodecListIn);
             UrlText.IsEnabled = true;
             UrlSelect.IsEnabled = true;
             InputSelect.IsEnabled = false;
             OnlineRadio.IsEnabled = false;
+            //OnlineListRadio.IsEnabled = true;
             LocalRadio.IsEnabled = true;
+            LocalUSMRadio.IsEnabled = true;
             ClearInfo();
         }
+
+        //public void OnOnlineListRadioClicked(object sender, RoutedEventArgs e)
+        //{
+        //    OnlineInput.BeginAnimation(MarginProperty, SlideIn);
+        //    OnlineInput.BeginAnimation(OpacityProperty, FadeIn);
+        //    LocalInput.BeginAnimation(MarginProperty, SlideOut);
+        //    LocalInput.BeginAnimation(OpacityProperty, FadeOut);
+        //    //Codec.BeginAnimation(HeightProperty, CodecListIn);
+        //    UrlText.IsEnabled = true;
+        //    UrlSelect.IsEnabled = true;
+        //    InputSelect.IsEnabled = false;
+        //    OnlineRadio.IsEnabled = true;
+        //    //OnlineListRadio.IsEnabled = false;
+        //    LocalRadio.IsEnabled = true;
+        //    LocalUSMRadio.IsEnabled = true;
+        //    ClearInfo();
+        //}
 
         public void OnLocalRadioClicked(object sender, RoutedEventArgs e)
         {
@@ -623,13 +672,48 @@ namespace WannaCriCS
             OnlineInput.BeginAnimation(OpacityProperty, FadeOut);
             LocalInput.BeginAnimation(MarginProperty, SlideIn);
             LocalInput.BeginAnimation(OpacityProperty, FadeIn);
-            Codec.BeginAnimation(HeightProperty, CodecListOut);
+            InputSelect.BeginAnimation(HeightProperty, ListHalf);
+            InputSelect.BeginAnimation(OpacityProperty, FadeIn);
+            InputUSMSelect.BeginAnimation(HeightProperty, ListIn);
+            InputUSMSelect.BeginAnimation(OpacityProperty, FadeOut);
+            Codec.BeginAnimation(WidthProperty, CodecListOut);
+            Modify.BeginAnimation(WidthProperty, CodecListOut);
+            //Codec.BeginAnimation(HeightProperty, CodecListOut);
             UrlText.IsEnabled = false;
             UrlSelect.IsEnabled = false;
             InputSelect.IsEnabled = true;
+            InputUSMSelect.IsEnabled = false;
             OnlineRadio.IsEnabled = true;
+            //OnlineListRadio.IsEnabled = true;
             LocalRadio.IsEnabled = false;
+            LocalUSMRadio.IsEnabled = true;
             ClearInfo();
+            InputText.Text = string.Empty;
+        }
+
+        public void OnLocalUSMRadioClicked(object sender, RoutedEventArgs e)
+        {
+            OnlineInput.BeginAnimation(MarginProperty, SlideOut);
+            OnlineInput.BeginAnimation(OpacityProperty, FadeOut);
+            LocalInput.BeginAnimation(MarginProperty, SlideIn);
+            LocalInput.BeginAnimation(OpacityProperty, FadeIn);
+            InputSelect.BeginAnimation(HeightProperty, ListIn);
+            InputSelect.BeginAnimation(OpacityProperty, FadeOut);
+            InputUSMSelect.BeginAnimation(HeightProperty, ListHalf);
+            InputUSMSelect.BeginAnimation(OpacityProperty, FadeIn);
+            Codec.BeginAnimation(WidthProperty, CodecListIn);
+            Modify.BeginAnimation(WidthProperty, CodecListIn);
+            //Codec.BeginAnimation(HeightProperty, CodecListOut);
+            UrlText.IsEnabled = false;
+            UrlSelect.IsEnabled = false;
+            InputSelect.IsEnabled = false;
+            InputUSMSelect.IsEnabled = true;
+            OnlineRadio.IsEnabled = true;
+            //OnlineListRadio.IsEnabled = true;
+            LocalRadio.IsEnabled = true;
+            LocalUSMRadio.IsEnabled = false;
+            ClearInfo();
+            InputText.Text = string.Empty;
         }
 
         public void OnOpenListClicked(object sender, RoutedEventArgs e)
@@ -645,15 +729,34 @@ namespace WannaCriCS
         public void OnInputSelectClicked(object sender, RoutedEventArgs e)
         {
             InputName = SelectInputFile();
-            //Task.Run(() => { FFProbeProcess(); });
             SetMediaInfo();
         }
 
         public void OnOutputSelectClicked(object sender, RoutedEventArgs e)
         {
             OutputName = SelectOutputFile();
-            //Task.Run(() => { FFProbeProcess(); });
             OutputText.Text = OutputName;
+        }
+        public void OnInputUSMSelectClicked(object sender, RoutedEventArgs e)
+        {
+            InputName = SelectUSMInputFile();
+            InputText.Text = InputName;
+        }
+
+        public void CompatibilityCheck(object sender, RoutedEventArgs e)
+        {
+            if ((bool)VP9Radio.IsChecked)
+            {
+                TargetCodecType = CodecType.VP9;
+                Suffix = ".ivf";
+                OnConvertClicked(null, null);
+            }
+            else
+            {
+                TargetCodecType = CodecType.H264;
+                Suffix = ".h264";
+                ConfirmationDialog.Show();
+            }
         }
 
         public void OnConvertClicked(object sender, RoutedEventArgs e)
@@ -673,7 +776,7 @@ namespace WannaCriCS
             CRF = CRFBox.Value.ToString();
             InputName = InputText.Text;
             OutputName = OutputText.Text;
-            if (!IsAudioAvailable)
+            if (!CurrentMedia.IsAudioAvailable)
             {
                 CurrentAudioState = ProgramAudioState.NoAudio;
             }
@@ -701,6 +804,28 @@ namespace WannaCriCS
                         SnackBarManager(SnackBarType.InputOutputError);
                     }
                 }
+                else if (LocalRadio.IsChecked == true)
+                {
+                    if (InputName != "" && OutputName != "")
+                    {
+                        OutputPath = Path.GetDirectoryName(OutputName);
+                        OutputFileName = Path.GetFileNameWithoutExtension(OutputName);
+                        ProgressGrid.Visibility = Visibility.Visible;
+                        UIState.Text = string.Empty;
+                        UIState2.Text = string.Empty;
+                        UIProgressBar.Value = 0;
+                        VideoProgress = 0;
+                        AudioProgress = 0;
+                        PythonCompleted = false;
+                        LockUI();
+                        LocalVideoConvertProcess();
+                        UIProgressBar.Foreground = ThemeColor;
+                    }
+                    else
+                    {
+                        SnackBarManager(SnackBarType.InputOutputError);
+                    }
+                }
                 else
                 {
                     if (InputName != "" && OutputName != "")
@@ -715,7 +840,7 @@ namespace WannaCriCS
                         AudioProgress = 0;
                         PythonCompleted = false;
                         LockUI();
-                        ConvertProcess();
+                        ExtractUSMPythonProcess();
                         UIProgressBar.Foreground = ThemeColor;
                     }
                     else
@@ -752,7 +877,7 @@ namespace WannaCriCS
             CurrentAudioState = ProgramAudioState.DownloadingAudio;
             UIState.Text = "DownloadingAudio";
             var aurl = audioStreamInfo.Url;
-            var asave = OutputPath + "\\" + VideoSafeTitle + "audio." + "webm";
+            var asave = OutputPath + "\\" + CurrentMedia.VideoSafeTitle + "audio." + "webm";
             //Debugger.Break();
             Debug.WriteLine(aurl);
             Debug.WriteLine(asave);
@@ -763,7 +888,7 @@ namespace WannaCriCS
             AudioFFmpegProcess(asave);
             UIState2.Text = "DownloadingVideo";
             var vurl = videoStreamInfo.Url;
-            var vsave = OutputPath + "\\" + VideoSafeTitle + "." + "webm";
+            var vsave = OutputPath + "\\" + CurrentMedia.VideoSafeTitle + "." + "webm";
             //Debugger.Break();
             Debug.WriteLine(vurl);
             await downloader.DownloadFileTaskAsync(vurl, vsave);
@@ -772,10 +897,10 @@ namespace WannaCriCS
             VideoFFmpegProcess(vsave);
         }
 
-        public void ConvertProcess()
+        public void LocalVideoConvertProcess()
         {
             VideoFFmpegProcess();
-            if (IsAudioAvailable)
+            if (CurrentMedia.IsAudioAvailable)
             {
                 CurrentAudioState = ProgramAudioState.NoAudio;
                 UIState.Text = "AudioNotAvailable";
@@ -787,7 +912,7 @@ namespace WannaCriCS
             }
         }
 
-        public void UpdateProgressBar()
+        public void UpdateProgressBar(bool ForceSuccess = false)
         {
             Dispatcher.InvokeAsync(() =>
             {
@@ -799,29 +924,66 @@ namespace WannaCriCS
                 {
                     UIProgressBar.Value = (VideoProgress * 0.75) + (AudioProgress * 0.2) + (PythonCompleted ? 5 : 0);
                 }
-                UIProgressText.Text = UIProgressBar.Value.ToString("0.00") + "%";
-            });
-            Dispatcher.InvokeAsync(() =>
-            {
+                if (ForceSuccess)
+                {
+                    UIProgressBar.Value = 100;
+                }
                 if (UIProgressBar.Value == 100)
                 {
+                    UIProgressBar.Foreground = SuccessColor;
                     LockUI(false);
                 }
+                UIProgressText.Text = UIProgressBar.Value.ToString("0.00") + "%";
             });
         }
-
+        public void RecommendCodec()
+        {
+            try
+            {
+                if (CurrentMedia.VideoCodecThreeShort == "vp9")
+                {
+                    VP9Text.Text = "VP9 (Recommended)";
+                    H264Text.Text = "H.264";
+                    VP9Radio.IsChecked = true;
+                    H264Radio.IsChecked = false;
+                }
+                else if (CurrentMedia.VideoCodecThreeShort == "h26" || CurrentMedia.VideoCodecThreeShort == "avc")
+                {
+                    VP9Text.Text = "VP9";
+                    H264Text.Text = "H.264 (Will Be Faster)";
+                    VP9Radio.IsChecked = false;
+                    H264Radio.IsChecked = true;
+                }
+                else
+                {
+                    VP9Text.Text = "VP9";
+                    H264Text.Text = "H.264";
+                    VP9Radio.IsChecked = true;
+                    H264Radio.IsChecked = false;
+                }
+            }
+            catch (Exception)
+            {
+                VP9Text.Text = "VP9";
+                H264Text.Text = "H.264";
+                VP9Radio.IsChecked = true;
+                H264Radio.IsChecked = false;
+            }
+            
+        }
         public string CopyAvailableCheck()
         {
             string Codec;
             string TargetVideoCodec;
+            var VideoCodecCopy = CurrentMedia.VideoCodecThreeShort;
             Codec = (TargetCodecType == CodecType.VP9) ? "vp9" : "libx264";
             TargetVideoCodec = (TargetCodecType == CodecType.VP9) ? "vp9" : "h264";
             var TargetVideoCodecThreeShort = TargetVideoCodec.Substring(0, 3);
-            if (CurrentVideoCodecThreeShort == "avc")
+            if (VideoCodecCopy == "avc")
             {
-                CurrentVideoCodecThreeShort = "h26";
+                VideoCodecCopy = "h26";
             }
-            if (TargetVideoCodecThreeShort == CurrentVideoCodecThreeShort && Brightness == "1")
+            if (TargetVideoCodecThreeShort == VideoCodecCopy && Brightness == "1")
             {
                 Codec = "copy";
             }
@@ -842,7 +1004,7 @@ namespace WannaCriCS
                     {
                         UIState2.Text = "ConvertedVideo";
                     });
-                    PythonProcess();
+                    CreateUSMPythonProcess();
                 }
             });
             if (LocalRadio.IsChecked == true)
@@ -857,7 +1019,7 @@ namespace WannaCriCS
                 .WithCustomArgument(CopyAvailableCheck() == "copy" ? "-an" : "-an -vf curves=all=\"0/0 1/" + Brightness + "\"")
                 .WithFastStart()
                 )
-                .NotifyOnProgress(progressHandler, VideoDuration)
+                .NotifyOnProgress(progressHandler, CurrentMedia.VideoDuration)
             .ProcessAsynchronously();
         }
 
@@ -886,13 +1048,13 @@ namespace WannaCriCS
                 .WithAudioCodec(AudioCodec.LibVorbis)
                 .WithAudioSamplingRate(44100)
                 .WithAudioBitrate(320)
-                .WithCustomArgument("-vn" + ((Volume=="1")?"":" -af volume="+Volume))
+                .WithCustomArgument("-vn" + ((Volume == "1") ? "" : " -af volume=" + Volume))
                 )
-                .NotifyOnProgress(progressHandler, VideoDuration)
+                .NotifyOnProgress(progressHandler, CurrentMedia.VideoDuration)
             .ProcessAsynchronously();
         }
 
-        public void PythonProcess()
+        public void CreateUSMPythonProcess()
         {
             CurrentVideoState = ProgramVideoState.WaitforWannaCri;
             Dispatcher.InvokeAsync(() =>
@@ -948,6 +1110,59 @@ namespace WannaCriCS
             }
             PythonCompleted = true;
             UpdateProgressBar();
+        }
+
+        public void ExtractUSMPythonProcess()
+        {
+            Process process = new Process();
+            process.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\FFmpeg";
+            process.StartInfo.FileName = Environment.CurrentDirectory + "\\Python\\python.exe";
+            process.StartInfo.Arguments = " -m wannacri extractusm \"" + InputName + "\" --output \"" + OutputPath + "\"";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardInput = true;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.CreateNoWindow = true;
+            process.Start();
+            process.WaitForExit();
+            process.Close();
+            //if (File.Exists(OutputPath + "\\" + SafeOutputName + ".usm"))
+            //{
+            //    if (File.Exists(OutputPath + "\\" + OutputFileName + ".usm"))
+            //    {
+            //        File.Delete(OutputPath + "\\" + OutputFileName + ".usm");
+            //    }
+            //    if (File.Exists(OutputPath + "\\" + SafeOutputName + Suffix))
+            //    {
+            //        File.Delete(OutputPath + "\\" + SafeOutputName + Suffix);
+            //    }
+            //    File.Move(OutputPath + "\\" + SafeOutputName + ".usm", OutputPath + "\\" + OutputFileName + ".usm");
+            //    Dispatcher.Invoke(() =>
+            //    {
+            //        SnackBarManager(SnackBarType.Success);
+            //        UIProgressBar.Foreground = SuccessColor;
+            //        UIState.Text = string.Empty;
+            //        UIState2.Text = string.Empty;
+            //    });
+            //    CurrentVideoState = ProgramVideoState.None;
+
+            //}
+            //else
+            //{
+            //    Dispatcher.Invoke(() =>
+            //    {
+            //        SnackBarManager(SnackBarType.ConvertError);
+            //        UIProgressBar.Foreground = ErrorColor;
+            //    });
+            //}
+            UpdateProgressBar(true);
+            Dispatcher.Invoke(() =>
+            {
+                SnackBarManager(SnackBarType.Success);
+                UIProgressBar.Foreground = SuccessColor;
+                UIState.Text = string.Empty;
+                UIState2.Text = string.Empty;
+            });
         }
     }
 }
