@@ -80,18 +80,18 @@
                 <TextBox x:Name="OutputText" IsEnabled="False" Margin="60,0,68,0" VerticalAlignment="Center"></TextBox>
                 <Button x:Name="OutputSelect" Content="Select" Click="OnOutputSelectClicked" Width="Auto" Margin="0,0,0,0" HorizontalAlignment="Right"/>
             </Grid>
-            <Grid x:Name="Codec" Margin="0,30,0,0" Width="380" HorizontalAlignment="Left">
+            <Grid x:Name="Codec" Margin="0,30,0,0" Width="610" HorizontalAlignment="Left">
                 <TextBlock FontSize="16" Width="55" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="White">Codec</TextBlock>
                 <StackPanel Margin="60,0,0,0" Orientation="Horizontal" HorizontalAlignment="Left">
                     <RadioButton Width="Auto" x:Name="VP9Radio" IsChecked="True">
                         <TextBlock x:Name="VP9Text" Margin="0,-2,0,0" FontSize="16" Width="200" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center"><Run Text="VP9"/></TextBlock>
                     </RadioButton>
                     <RadioButton Width="Auto" x:Name="H264Radio">
-                        <TextBlock x:Name="H264Text" Margin="0,-2,0,0" FontSize="16" Width="200" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center"><Run Text="H.264"/></TextBlock>
+                        <TextBlock x:Name="H264Text" Margin="0,-2,0,0" FontSize="16" Width="400" FontFamily="Segoe UI Variable Display Semibold" HorizontalAlignment="Left" VerticalAlignment="Center"><Run Text="H.264"/></TextBlock>
                     </RadioButton>
                 </StackPanel>
             </Grid>
-            <Grid x:Name="Modify" Margin="0,10,0,0" Width="380" HorizontalAlignment="Left">
+            <Grid x:Name="Modify" Margin="0,10,0,0" Width="610" HorizontalAlignment="Left">
                 <StackPanel>
                     <Grid Margin="0,0,0,0" Width="290" HorizontalAlignment="Left">
                         <TextBlock Text="CRF:" Width="55" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
@@ -115,6 +115,8 @@
             <Grid Margin="0,10,40,0" x:Name="ProgressGrid" Visibility="Hidden">
                 <ProgressBar Margin="80,5,0,0" x:Name="UIProgressBar" Maximum="100" Value="0"></ProgressBar>
                 <TextBlock x:Name="UIProgressText" Foreground="White" FontSize="16" Margin="0,0,0,0" HorizontalAlignment="Left" VerticalAlignment="Center" Text="Progress"></TextBlock>
+                <TextBlock x:Name="UIProgressTime" Foreground="White" FontSize="16" Margin="0,0,-45,0" HorizontalAlignment="Right" VerticalAlignment="Center" Text="00:00"></TextBlock>
+
             </Grid>
         </StackPanel>
         <StackPanel Orientation="Vertical" VerticalAlignment="Bottom" Grid.ColumnSpan="2" Margin="0,0,0,0">
