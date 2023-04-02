@@ -222,7 +222,7 @@ namespace WannaCriCS
 
         public void InitAnimation()
         {
-            SlideOut.To = new Thickness(1000, 10, 0, 0); ;
+            SlideOut.To = new Thickness(1000, 0, 0, 0); ;
             SlideOut.Duration = TimeSpan.FromSeconds(1);
             SlideOut.EasingFunction = new BackEase()
             {
@@ -230,7 +230,7 @@ namespace WannaCriCS
                 Amplitude = 1,
             };
 
-            SlideIn.To = new Thickness(0, 10, 0, 0);
+            SlideIn.To = new Thickness(0, 0, 0, 0);
             SlideIn.Duration = TimeSpan.FromSeconds(1);
             SlideIn.EasingFunction = new BackEase()
             {
