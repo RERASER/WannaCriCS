@@ -5,25 +5,16 @@ using FFMpegCore;
 using FFMpegCore.Enums;
 using System.ComponentModel;
 using System.IO;
-using Wpf.Ui.Controls.Interfaces;
-using Wpf.Ui.Mvvm.Contracts;
-using Wpf.Ui.Mvvm.Interfaces;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Controls;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 using System.Linq;
-using System.Collections.Generic;
-using System.IO.Packaging;
 using System.Threading;
 using System.Net;
 using Downloader;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Net.Http;
 using System.Windows.Threading;
-using Microsoft.Win32;
 
 namespace WannaCriCS
 {
@@ -311,6 +302,7 @@ namespace WannaCriCS
         public void InitFFmpeg()
         {
             GlobalFFOptions.Configure(options => options.BinaryFolder = Environment.CurrentDirectory + "\\FFmpeg");
+            GlobalFFOptions.Configure(options => options.Encoding = System.Text.Encoding.UTF8);
         }
 
         public void ListAnimation(AnimationType i)
@@ -419,14 +411,14 @@ namespace WannaCriCS
                     ErrorBar.Show();
                     break;
                 case SnackBarType.LinkError:
-                    ErrorBar.Content = "Not a valid link or network error.";
+                    ErrorBar.Content = "Invalid link or network error.";
                     ErrorBar.Appearance = Wpf.Ui.Common.ControlAppearance.Danger;
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 6000;
                     ErrorBar.Show();
                     break;
                 case SnackBarType.NotValid:
-                    ErrorBar.Content = "Not a valid video file.";
+                    ErrorBar.Content = "Invalid video file.";
                     ErrorBar.Appearance = Wpf.Ui.Common.ControlAppearance.Danger;
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 6000;
@@ -508,7 +500,7 @@ namespace WannaCriCS
                 var mediaInfo = await FFProbe.AnalyseAsync(InputName);
                 CurrentMedia.VideoCodec = mediaInfo.PrimaryVideoStream.CodecName;
                 CurrentMedia.VideoBitRate = mediaInfo.PrimaryVideoStream.BitRate;
-                CurrentMedia.VideoDuration = mediaInfo.PrimaryVideoStream.Duration;
+                CurrentMedia.VideoDuration = mediaInfo.Duration;
                 InputText.Text = InputName;
                 try
                 {
@@ -640,10 +632,6 @@ namespace WannaCriCS
             else
             {
                 Exit(null, null);
-            }
-            if (true)
-            {
-
             }
         }
 

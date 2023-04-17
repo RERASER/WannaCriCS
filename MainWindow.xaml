@@ -102,7 +102,7 @@
                     <TextBlock Text="0 is Best quality and Biggest size" Width="300" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" Foreground="White" Margin="0,10,0,0" HorizontalAlignment="Left" />
                     <Grid Margin="0,10,0,0" Width="290" HorizontalAlignment="Left">
                         <TextBlock Text="Volume:" Width="60" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
-                        <ui:NumberBox x:Name="VolumeBox" Min="0" Max="100" Value="100" IntegersOnly="True" Margin="40,0,0,0" Width="140"/>
+                        <ui:NumberBox x:Name="VolumeBox" Min="0" Max="100" Value="60" IntegersOnly="True" Margin="40,0,0,0" Width="140"/>
                     </Grid>
                     <Grid Margin="0,10,0,0" Width="290" HorizontalAlignment="Left">
                         <TextBlock Text="Brightness:" Width="80" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
