@@ -441,21 +441,22 @@ namespace WannaCriCS
                 info.ToolTip = CurrentMedia.VideoTitle;
                 info2.Text = "Getting Stream Info...";
                 streamManifest = await Youtube.Videos.Streams.GetManifestAsync(VideoUrl);
-                var VideoList = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec.Substring(0, 3) == "vp9" || s.VideoCodec.Substring(0, 3) == "avc").Where(s => s.VideoResolution.Height >= 480).ToList();
+                var VideoList = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec.Substring(0, 3) == "vp9" || s.VideoCodec.Substring(0, 3) == "avc").Where(s => s.VideoResolution.Height >= 0).ToList();
                 foreach (var item in VideoList)
                 {
                     UIVideoList.Items.Add(item.VideoQuality.Label + " " + item.VideoCodec + " " + item.Size.MegaBytes.ToString("0.00") + "MB");
                 }
                 info2.Text = "Waiting for select stream...";
                 ListAnimation(AnimationType.On);
-            }
+        }
             catch (Exception)
             {
                 SnackBarManager(SnackBarType.LinkError);
-                info.Text = "NotAvailable";
+        info.Text = "NotAvailable";
                 CurrentMedia.VideoCodec = string.Empty;
+
             }
-        }
+}
 
         public void SetYoutubeInfo(object sender, SelectionChangedEventArgs e)
         {

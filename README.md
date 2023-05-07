@@ -3,6 +3,8 @@ A GUI to convert video to usm format
 
 Inspired by <a href="https://github.com/hiki8man/Wannacri_GUI">hiki8man</a>
 
+<a href="https://github.com/RERASER/WannaCriCS/actions">Latest version</a>
+
 Direct convert video from Youtube
 ![image](https://user-images.githubusercontent.com/63722060/230138380-76cab505-2177-4268-afe4-77d42117a1c6.png)
 
