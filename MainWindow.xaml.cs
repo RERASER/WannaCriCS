@@ -15,6 +15,7 @@ using System.Threading;
 using System.Net;
 using Downloader;
 using System.Windows.Threading;
+using System.Text.RegularExpressions;
 
 namespace WannaCriCS
 {
@@ -88,6 +89,20 @@ namespace WannaCriCS
 
         public IStreamInfo audioStreamInfo;
 
+        public class USMKey
+        {
+            public string Key = string.Empty;
+
+            public bool UseKey => !string.IsNullOrEmpty(Key);
+
+            public Regex regex = new Regex(@"^[A-Za-z0-9]+$");
+
+            public bool KeyVaild => UseKey ? Key.StartsWith("0x") && Key.Length == 18 && regex.IsMatch(Key) : true;
+
+        }
+
+        public USMKey Key;
+
         public class MediaInfo
         {
             public string VideoCodec;
@@ -104,7 +119,9 @@ namespace WannaCriCS
 
             public int maxLength = 23;
 
-            public string VideoSafeTitle => System.Text.Encodings.Web.UrlEncoder.Default.Encode(VideoTitle);
+            public Regex regex = new Regex("[\\/:*?\"\'|<>]");
+
+            public string VideoSafeTitle => regex.Replace(VideoTitle, string.Empty);
 
             public string ShortVideoTitle => VideoTitle.Length > maxLength ? VideoTitle.Substring(0, maxLength - 13) + "...(Hover to see more)" : VideoTitle;
 
@@ -140,9 +157,9 @@ namespace WannaCriCS
 
         public enum WorkState
         {
-        Online = 0,
-        Local = 1,
-        ExtractUSM = 2
+            Online = 0,
+            Local = 1,
+            ExtractUSM = 2
         }
 
         public WorkState CurrentWorkState;
@@ -204,6 +221,7 @@ namespace WannaCriCS
             InitFFmpeg();
 
             CurrentMedia = new MediaInfo();
+            Key = new USMKey();
         }
 
         protected override void OnClosing(CancelEventArgs e)
@@ -404,7 +422,7 @@ namespace WannaCriCS
                     LockUI(false);
                     break;
                 case SnackBarType.InputOutputError:
-                    ErrorBar.Content = "Input or Output is empty.";
+                    ErrorBar.Content = "Input or Output is empty. Or invaild Key";
                     ErrorBar.Appearance = Wpf.Ui.Common.ControlAppearance.Danger;
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 2000;
@@ -448,15 +466,15 @@ namespace WannaCriCS
                 }
                 info2.Text = "Waiting for select stream...";
                 ListAnimation(AnimationType.On);
-        }
+            }
             catch (Exception)
             {
                 SnackBarManager(SnackBarType.LinkError);
-        info.Text = "NotAvailable";
+                info.Text = "NotAvailable";
                 CurrentMedia.VideoCodec = string.Empty;
 
             }
-}
+        }
 
         public void SetYoutubeInfo(object sender, SelectionChangedEventArgs e)
         {
@@ -719,7 +737,7 @@ namespace WannaCriCS
             InputUSMSelect.BeginAnimation(HeightProperty, ListHalf);
             InputUSMSelect.BeginAnimation(OpacityProperty, FadeIn);
             VideoSettingPanel.BeginAnimation(HeightProperty, PanelIn);
-            TheWindow.MinHeight = 300;
+            TheWindow.MinHeight = 380;
             TheWindow.MinWidth = 400;
             //Codec.BeginAnimation(HeightProperty, CodecListOut);
             UrlText.IsEnabled = false;
@@ -795,15 +813,16 @@ namespace WannaCriCS
             CRF = CRFBox.Value.ToString();
             InputName = InputText.Text;
             OutputName = OutputText.Text;
-            if (!CurrentMedia.IsAudioAvailable)
-            {
-                CurrentAudioState = ProgramAudioState.NoAudio;
-            }
+            Key.Key = KeyBox.Text;
             try
             {
+                if (!CurrentMedia.IsAudioAvailable)
+                {
+                    CurrentAudioState = ProgramAudioState.NoAudio;
+                }
                 if (CurrentWorkState == WorkState.Online)
                 {
-                    if (videoStreamInfo != null && OutputName != "")
+                    if (videoStreamInfo != null && OutputName != "" && Key.KeyVaild)
                     {
                         OutputPath = Path.GetDirectoryName(OutputName);
                         OutputFileName = Path.GetFileNameWithoutExtension(OutputName);
@@ -825,7 +844,7 @@ namespace WannaCriCS
                 }
                 else if (CurrentWorkState == WorkState.Local)
                 {
-                    if (InputName != "" && OutputName != "")
+                    if (InputName != "" && OutputName != "" && Key.KeyVaild)
                     {
                         OutputPath = Path.GetDirectoryName(OutputName);
                         OutputFileName = Path.GetFileNameWithoutExtension(OutputName);
@@ -847,7 +866,7 @@ namespace WannaCriCS
                 }
                 else if (CurrentWorkState == WorkState.ExtractUSM)
                 {
-                    if (InputName != "" && OutputName != "")
+                    if (InputName != "" && OutputName != "" && Key.KeyVaild)
                     {
                         OutputPath = Path.GetDirectoryName(OutputName);
                         OutputFileName = Path.GetFileNameWithoutExtension(OutputName);
@@ -972,8 +991,8 @@ namespace WannaCriCS
                     }
                 });
             }
-           
-            
+
+
         }
         public void RecommendCodec()
         {
@@ -1109,7 +1128,20 @@ namespace WannaCriCS
             Process process = new Process();
             process.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\FFmpeg";
             process.StartInfo.FileName = Environment.CurrentDirectory + "\\Python\\python.exe";
-            process.StartInfo.Arguments = " -m wannacri createusm \"" + OutputPath + "\\" + SafeOutputName + Suffix + "\" --output \"" + OutputPath + "\\" + SafeOutputName + "\"";
+            var key = string.Empty;
+            Dispatcher.Invoke(() =>
+            {
+                key = KeyBox.Text;
+            });
+            if (Key.UseKey)
+            {
+                process.StartInfo.Arguments = " -m wannacri createusm \"" + OutputPath + "\\" + SafeOutputName + Suffix + "\" --output \"" + OutputPath + "\\" + SafeOutputName + "\"" + " --key " + key;
+
+            }
+            else
+            {
+                process.StartInfo.Arguments = " -m wannacri createusm \"" + OutputPath + "\\" + SafeOutputName + Suffix + "\" --output \"" + OutputPath + "\\" + SafeOutputName + "\"";
+            }
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
@@ -1153,7 +1185,7 @@ namespace WannaCriCS
                     Dispatcher.Invoke(() =>
                     {
                         SnackBarManager(SnackBarType.ConvertError);
-                        UIProgressBar.Foreground = ErrorColor;                     
+                        UIProgressBar.Foreground = ErrorColor;
                     });
                 }
 
@@ -1177,7 +1209,14 @@ namespace WannaCriCS
             Process process = new Process();
             process.StartInfo.WorkingDirectory = Environment.CurrentDirectory + "\\FFmpeg";
             process.StartInfo.FileName = Environment.CurrentDirectory + "\\Python\\python.exe";
-            process.StartInfo.Arguments = " -m wannacri extractusm \"" + InputName + "\" --output \"" + OutputPath + "\"";
+            if (Key.UseKey)
+            {
+                process.StartInfo.Arguments = " -m wannacri extractusm \"" + InputName + "\" --output \"" + OutputPath + "\"" + " --key " + Key.Key;
+            }
+            else
+            {
+                process.StartInfo.Arguments = " -m wannacri extractusm \"" + InputName + "\" --output \"" + OutputPath + "\"";
+            }
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardOutput = true;
