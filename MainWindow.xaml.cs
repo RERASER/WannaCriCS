@@ -1035,7 +1035,7 @@ namespace WannaCriCS
             catch (Exception)
             {
                 VP9Text.Text = "VP9";
-                H264Text.Text = "H.264";
+                H264Text.Text = "H264";
                 VP9Radio.IsChecked = true;
                 H264Radio.IsChecked = false;
             }

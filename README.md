@@ -1,15 +1,19 @@
 # WannaCriCS
 A GUI to convert video to usm format
 
+
+
+Latest version
+[![Build](https://github.com/RERASER/WannaCriCS/actions/workflows/main.yml/badge.svg)](https://github.com/RERASER/WannaCriCS/actions/workflows/main.yml)
+
 Inspired by <a href="https://github.com/hiki8man/Wannacri_GUI">hiki8man</a>
 
-<a href="https://github.com/RERASER/WannaCriCS/actions">Latest version</a>
+Base by <a href="https://github.com/donmai-me/WannaCRI">WannaCRI</a>
 
-Direct convert video from Youtube
-![image](https://user-images.githubusercontent.com/63722060/230138380-76cab505-2177-4268-afe4-77d42117a1c6.png)
+For MM+ Moder:
+Leave the Key empty.
+Since Linux still doesn't support H264 decode,you should always use VP9 to convert your video file to USM.
 
-Select youtube stream
-![image](https://user-images.githubusercontent.com/63722060/230138963-04d47ecf-6865-4389-acb7-4bf36ef5dbc4.png)
+You can find some keys at <a href="https://github.com/vgmstream/vgmstream/blob/master/src/meta/adx_keys.h">here</a> and <a href="https://github.com/vgmstream/vgmstream/blob/master/src/meta/hca_keys.h">here</a>
 
-Select output path just ignore filename
-![image](https://user-images.githubusercontent.com/63722060/230139746-c42ad498-e5b2-407c-8d64-b808393c1619.png)
+FFmpeg convert VP9 is slow,so if you didn't want waste your time on convert,you can upload your video to youtube,and use the youtube mode to convert.
