@@ -145,7 +145,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Downloader">
-      <Version>3.0.5</Version>
+      <Version>3.0.6</Version>
     </PackageReference>
     <PackageReference Include="FFMpegCore">
       <Version>5.1.0</Version>
