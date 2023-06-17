@@ -137,6 +137,8 @@ namespace WannaCriCS
 
         public MediaInfo CurrentMedia;
 
+        public Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager taskbarManager = Microsoft.WindowsAPICodePack.Taskbar.TaskbarManager.Instance;
+
         public string CRF;
 
         public string Volume;
@@ -414,6 +416,7 @@ namespace WannaCriCS
                     ErrorBar.Timeout = 30000;
                     ErrorBar.Show();
                     LockUI(false);
+                    taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
                     break;
                 case SnackBarType.ConvertError:
                     ErrorBar.Content = "An unexpected error has occurred.";
@@ -421,6 +424,7 @@ namespace WannaCriCS
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = -1;
                     ErrorBar.Show();
+                    taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Error);
                     LockUI(false);
                     break;
                 case SnackBarType.InputOutputError:
@@ -429,6 +433,7 @@ namespace WannaCriCS
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 2000;
                     ErrorBar.Show();
+                    taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
                     break;
                 case SnackBarType.LinkError:
                     ErrorBar.Content = "Invalid link or network error.";
@@ -436,6 +441,7 @@ namespace WannaCriCS
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 6000;
                     ErrorBar.Show();
+                    taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
                     break;
                 case SnackBarType.NotValid:
                     ErrorBar.Content = "Invalid video file.";
@@ -443,6 +449,7 @@ namespace WannaCriCS
                     ErrorBar.Icon = Wpf.Ui.Common.SymbolRegular.ErrorCircle24;
                     ErrorBar.Timeout = 6000;
                     ErrorBar.Show();
+                    taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
                     break;
             }
         }
@@ -450,6 +457,7 @@ namespace WannaCriCS
         public async void CheckYoutubeLink()
         {
             ClearInfo();
+            taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Indeterminate);
             info.Text = "Getting Info...";
             var VideoUrl = UrlText.Text;
             try
@@ -481,8 +489,8 @@ namespace WannaCriCS
                 SnackBarManager(SnackBarType.LinkError);
                 info.Text = "NotAvailable";
                 CurrentMedia.VideoCodec = string.Empty;
-
             }
+            taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
         }
 
         public void SetYoutubeInfo(object sender, SelectionChangedEventArgs e)
@@ -517,12 +525,11 @@ namespace WannaCriCS
             {
                 ClearInfo();
             }
-
-
         }
 
         public async void SetMediaInfo()
         {
+            taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Indeterminate);
             try
             {
                 var mediaInfo = await FFProbe.AnalyseAsync(InputName);
@@ -557,11 +564,12 @@ namespace WannaCriCS
                 SnackBarManager(SnackBarType.NotValid);
                 RecommendCodec();
             }
+            taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
         }
 
         public string SelectInputFile()
         {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog();
 
             var result = openFileDialog.ShowDialog();
 
@@ -577,13 +585,15 @@ namespace WannaCriCS
 
         public string SelectUSMInputFile()
         {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-            openFileDialog.FileName = "Output";
-            openFileDialog.DefaultExt = ".usm";
-            openFileDialog.Filter = "Criware Video File (.usm)|*.usm";
-            openFileDialog.AddExtension = true;
-            openFileDialog.CheckFileExists = true;
-            openFileDialog.CheckPathExists = true;
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                FileName = "Output",
+                DefaultExt = ".usm",
+                Filter = "Criware Video File (.usm)|*.usm",
+                AddExtension = true,
+                CheckFileExists = true,
+                CheckPathExists = true
+            };
             var result = openFileDialog.ShowDialog();
 
             if (result == true)
@@ -598,13 +608,15 @@ namespace WannaCriCS
 
         public string SelectOutputFile()
         {
-            Microsoft.Win32.SaveFileDialog saveFileDialog = new Microsoft.Win32.SaveFileDialog();
-            saveFileDialog.FileName = "Output";
-            saveFileDialog.DefaultExt = ".usm";
-            saveFileDialog.Filter = "Criware Video File (.usm)|*.usm";
-            saveFileDialog.AddExtension = true;
-            saveFileDialog.CheckFileExists = false;
-            saveFileDialog.CheckPathExists = true;
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                FileName = "Output",
+                DefaultExt = ".usm",
+                Filter = "Criware Video File (.usm)|*.usm",
+                AddExtension = true,
+                CheckFileExists = false,
+                CheckPathExists = true
+            };
             var result = saveFileDialog.ShowDialog();
 
             if (result == true)
@@ -621,6 +633,8 @@ namespace WannaCriCS
         {
             try
             {
+                taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.NoProgress);
+                taskbarManager.SetProgressValue(0, 100);
                 ListAnimation(AnimationType.Off);
                 info.Text = "Waiting...";
                 info2.Text = string.Empty;
@@ -653,6 +667,7 @@ namespace WannaCriCS
             ClearInfo();
             UrlText.Text = string.Empty;
         }
+
         public void OnExitClicked(object sender, EventArgs e)
         {
             if (ProcessLock)
@@ -848,6 +863,7 @@ namespace WannaCriCS
                         LockUI();
                         DownloadProcess();
                         UIProgressBar.Foreground = ThemeColor;
+                        taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal);
                     }
                     else
                     {
@@ -870,6 +886,7 @@ namespace WannaCriCS
                         LockUI();
                         LocalVideoConvertProcess();
                         UIProgressBar.Foreground = ThemeColor;
+                        taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal);
                     }
                     else
                     {
@@ -892,6 +909,7 @@ namespace WannaCriCS
                         LockUI();
                         ExtractUSMPythonProcess();
                         UIProgressBar.Foreground = ThemeColor;
+                        taskbarManager.SetProgressState(Microsoft.WindowsAPICodePack.Taskbar.TaskbarProgressBarState.Normal);
                     }
                     else
                     {
@@ -988,6 +1006,10 @@ namespace WannaCriCS
                     LastUpdateTime = DateTime.Now;
                     LastDownloadProgress = progress;
                 }
+                if (progress != 100)
+                {
+                    taskbarManager.SetProgressValue((int)progress, 100);
+                }
                 Dispatcher.InvokeAsync(() =>
                 {
                     UIProgressBar.Value = progress;
@@ -997,7 +1019,7 @@ namespace WannaCriCS
                     {
                         UIProgressBar.Value = 100;
                     }
-                    if (UIProgressBar.Value == 100)
+                    if (progress == 100)
                     {
                         LockUI(false);
                     }

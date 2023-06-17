@@ -115,12 +115,12 @@
                     </StackPanel>
                 </Grid>
             </StackPanel>
-            <Grid Margin="0,10,0,0">
+            <Grid Margin="0,8,0,0">
                 <TextBlock Text="Key(optional):" Width="105" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
                 <TextBox x:Name="KeyBox" Margin="115,0,0,0" Text=""/>
             </Grid>
             <Grid Margin="0,10,0,0">
-                <TextBlock Text="Format:0x1234567890ABCDEF" Width="220" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
+                <TextBlock Text="Key Format:0x1234567890ABCDEF" Width="250" FontFamily="Segoe UI Variable Display Semibold" FontSize="16" VerticalAlignment="Center" HorizontalAlignment="Left" Foreground="White" />
             </Grid>
             <Grid Margin="0,15,40,0" x:Name="ProgressGrid" Visibility="Visible">
                 <ProgressBar Margin="80,5,0,0" x:Name="UIProgressBar" Maximum="100" Value="0"></ProgressBar>
