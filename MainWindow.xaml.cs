@@ -16,6 +16,7 @@ using System.Net;
 using Downloader;
 using System.Windows.Threading;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace WannaCriCS
 {
@@ -105,6 +106,8 @@ namespace WannaCriCS
 
         public class MediaInfo
         {
+            public YoutubeExplode.Videos.Video Video;
+
             public string VideoCodec;
 
             public string VideoCodecThreeShort => VideoCodec.Substring(0, 3);
@@ -132,6 +135,8 @@ namespace WannaCriCS
             public CodecType _VideoCodec;
 
             public bool IsAudioAvailable;
+
+            public IEnumerable<YoutubeExplode.Videos.Streams.VideoOnlyStreamInfo> Streams;
 
         }
 
@@ -225,6 +230,7 @@ namespace WannaCriCS
             InitFFmpeg();
 
             CurrentMedia = new MediaInfo();
+
             Key = new USMKey();
         }
 
@@ -462,18 +468,18 @@ namespace WannaCriCS
             var VideoUrl = UrlText.Text;
             try
             {
-                var video = await Youtube.Videos.GetAsync(VideoUrl);
-                CurrentMedia.VideoTitle = video.Title;
-                CurrentMedia.VideoDuration = (TimeSpan)video.Duration;
+                CurrentMedia.Video = await Youtube.Videos.GetAsync(VideoUrl);
+                CurrentMedia.VideoTitle = CurrentMedia.Video.Title;
+                CurrentMedia.VideoDuration = (TimeSpan)CurrentMedia.Video.Duration;
                 info.Text = "Title:" + CurrentMedia.ShortVideoTitle + " Duration:" + CurrentMedia.VideoDuration.ToString("hh\\:mm\\:ss");
                 info.ToolTip = CurrentMedia.VideoTitle;
                 info2.Text = "Getting Stream Info...";
                 streamManifest = await Youtube.Videos.Streams.GetManifestAsync(VideoUrl);
-                //var VideoList = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec.Substring(0, 3) == "vp9" || s.VideoCodec.Substring(0, 3) == "avc").Where(s => s.VideoResolution.Height >= 0).ToList();
-                var VideoList = streamManifest.GetVideoOnlyStreams().ToList();
-                //var MuxedList = streamManifest.GetMuxedStreams().ToList();
+                //var VideoList = streamManifest.GetVideoOnlyStreams().Where(s => s.VideoCodec.Substring(0, 3) == "vp9" || s.VideoCodec.Substring(0, 3) == "avc").Where(s => s.VideoResolution.Height >= 0);
+                CurrentMedia.Streams = streamManifest.GetVideoOnlyStreams();
+                //var MuxedList = streamManifest.GetMuxedStreams();
 
-                foreach (var item in VideoList)
+                foreach (var item in CurrentMedia.Streams)
                 {
                     UIVideoList.Items.Add(item.VideoQuality.Label + " " + item.VideoCodec + " " + item.Size.MegaBytes.ToString("0.00") + "MB");
                 }
@@ -505,6 +511,7 @@ namespace WannaCriCS
                 var VideoFrameRate = videoStreamInfo.VideoQuality.Framerate.ToString();
                 CurrentMedia.VideoCodec = videoStreamInfo.VideoCodec;
                 CurrentMedia.VideoBitRate = videoStreamInfo.Bitrate.BitsPerSecond;
+                CurrentMedia.PixelFormat = "yuv420p";
                 Debug.WriteLine(CurrentMedia.VideoBitRate);
                 RecommendCodec();
                 info2.Text = "Video:" + VideoResolution + " " + CurrentMedia.VideoCodec + " Audio:Getting...";
@@ -645,6 +652,8 @@ namespace WannaCriCS
                 VideoProgress = 0;
                 AudioProgress = 0;
                 UIVideoList.Items.Clear();
+                CurrentMedia.Video = null;
+                CurrentMedia.Streams = null;
                 CurrentMedia.VideoTitle = string.Empty;
                 streamManifest = null;
                 videoStreamInfo = null;
@@ -989,7 +998,6 @@ namespace WannaCriCS
                 if (online)
                 {
                     progress = (AudioDownloadProgress * 0.1) + (VideoDownloadProgress * 0.35) + (AudioProgress * 0.05) + (VideoProgress * 0.45) + (PythonCompleted ? 5 : 0);
-
                 }
                 else
                 {
